@@ -21,6 +21,11 @@ Among them, the **YOLOv8n-cls** model was selected due to its high accuracy and 
 - **Dynamic Resizing**: Resizes images to the required input size for YOLO.
 - **REST API**: Supports POST requests for predictions.
 - **CORS Enabled**: Allows cross-origin resource sharing for flexible integrations.
+  
+## Demo
+You can try out the demo by accessing the deployed API endpoint directly in your browser or through Postman.
+
+**Demo Link:** https://childdrawingclassifier-api.onrender.com/predict
 
 ## Installation and Setup
 
