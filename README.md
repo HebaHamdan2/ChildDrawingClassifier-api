@@ -11,7 +11,8 @@ This repository provides a **Flask-based** API for deploying a pre-trained **YOL
 
 The API processes an uploaded drawing and returns percentage-based predictions for each category, offering detailed insights into the psychological state conveyed in the image. The application is deployed on Render, making it accessible for seamless integration with web or mobile apps. The primary objective is to enable parents to analyze their children's drawings and gain insights into their emotional and psychological well-being.
 
-This repository builds on work done in a previous repository, where multiple models were trained and evaluated. Among them, the **YOLOv8n-cls** model was selected due to its high accuracy and efficiency, making it suitable for real-world applications. This API serves as a foundation for integrating the prediction capabilities into user-friendly platforms.
+This repository builds on work done in a previous repository, where multiple models were trained and evaluated. The previous repository can be found [here](https://github.com/HebaHamdan2/Psychological-Classification-of-Children-Drawings).
+Among them, the **YOLOv8n-cls** model was selected due to its high accuracy and efficiency, making it suitable for real-world applications. This API serves as a foundation for integrating the prediction capabilities into user-friendly platforms.
 
 ## Features
 
