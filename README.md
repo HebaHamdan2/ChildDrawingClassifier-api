@@ -101,12 +101,12 @@ The API will be available at `http://127.0.0.1:5000`.
 
 ```json
 {
-  "predictions": {
-    "Happy": "72.34%",
-    "Sad": "12.45%",
-    "Anger and aggression": "8.12%",
-    "Anxiety": "7.09%"
-  }
+    "predictions": {
+        "Anger and aggression": "0.00%",
+        "Anxiety": "0.03%",
+        "Happy": "0.98%",
+        "Sad": "98.99%"
+    }
 }
 ```
 
