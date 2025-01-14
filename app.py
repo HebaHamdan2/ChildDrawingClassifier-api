@@ -1,4 +1,5 @@
 import os
+import requests
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from ultralytics import YOLO
@@ -15,11 +16,29 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 # Set up logging for debugging
 logging.basicConfig(level=logging.INFO)
 
-# Load the YOLO model - use an absolute path or environment variable if needed
-MODEL_PATH = os.getenv("MODEL_PATH", "../best.pt")
-if not os.path.exists(MODEL_PATH):
-    raise FileNotFoundError(f"Model file not found at {MODEL_PATH}. Ensure the path is correct.")
+# GitHub release URL for the model file
+RELEASE_URL = "https://github.com/HebaHamdan2/children-drawings-predict/releases/download/v1.0.0/best.pt"  
+MODEL_PATH = "best.pt"
 
+# Function to download the model file from GitHub release URL
+def download_model():
+    if not os.path.exists(MODEL_PATH):
+        logging.info(f"Downloading model from {RELEASE_URL}")
+        try:
+            response = requests.get(RELEASE_URL)
+            response.raise_for_status()  # Raise an exception for HTTP errors
+            with open(MODEL_PATH, 'wb') as f:
+                f.write(response.content)
+            logging.info(f"Model downloaded successfully and saved to {MODEL_PATH}")
+        except Exception as e:
+            logging.error(f"Error downloading the model: {e}")
+            raise RuntimeError(f"Error downloading the model: {e}")
+
+# Download the model if it doesn't exist
+if not os.path.exists(MODEL_PATH):
+    download_model()
+
+# Load the YOLO model
 try:
     model = YOLO(MODEL_PATH)
     logging.info("YOLO model loaded successfully.")
@@ -49,28 +68,35 @@ def resize_image(filepath, target_size=(224, 224)):
 
 @app.route('/predict', methods=['POST'])
 def predict():
+    # Check if an image file is included in the request
     if 'image' not in request.files:
         return jsonify({'error': 'No image file provided'}), 400
 
     file = request.files['image']
+    
+    # Validate file format
     if not (file and allowed_file(file.filename)):
         return jsonify({'error': 'Invalid file format. Allowed formats: png, jpg, jpeg'}), 400
 
     filename = secure_filename(file.filename)
     filepath = os.path.join(UPLOADS_DIR, filename)
+
     try:
+        # Save the uploaded file to the server
         file.save(filepath)
         logging.info(f"Image saved at: {filepath}")
 
+        # Open and log the image properties
         with Image.open(filepath) as img:
             logging.info(f"Original image size: {img.size}")
 
+        # Resize the image
         resize_image(filepath)
 
         # Run inference using the YOLO model
         results = model.predict(source=filepath, show=False)
 
-        # Cleanup temporary file
+        # Cleanup the temporary file after prediction
         os.remove(filepath)
 
         # Extract and format results
@@ -83,6 +109,7 @@ def predict():
             return jsonify({'error': 'Unable to process the image'}), 500
 
     except Exception as e:
+        # Log the error and cleanup
         logging.error(f"Error during prediction: {e}")
         if os.path.exists(filepath):
             os.remove(filepath)
@@ -90,5 +117,6 @@ def predict():
 
 # Main entry point for Render deployment
 if __name__ == '__main__':
+    # Ensure the app uses the correct port on the cloud platform
     port = int(os.getenv("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
