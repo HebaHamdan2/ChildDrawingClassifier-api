@@ -1,7 +1,7 @@
 {
   "version": 2,
   "functions": {
-    "app.py": {
+    "api/app.py": {
       "memory": 256,
       "maxDuration": 10
     }
@@ -9,7 +9,7 @@
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "app.py"
+      "dest": "api/app.py"
     }
   ]
 }
