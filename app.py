@@ -17,7 +17,7 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 logging.basicConfig(level=logging.INFO)
 
 # GitHub release URL for the model file
-RELEASE_URL = "https://github.com/HebaHamdan2/children-drawings-predict/releases/download/v1.0.0/best.pt"  
+RELEASE_URL = "https://github.com/HebaHamdan2/ChildDrawingsSpeak-backend/releases/download/v.1.0.0/best.pt"  
 MODEL_PATH = "best.pt"
 
 # Function to download the model file from GitHub release URL
@@ -25,12 +25,16 @@ def download_model():
     if not os.path.exists(MODEL_PATH):
         logging.info(f"Downloading model from {RELEASE_URL}")
         try:
-            response = requests.get(RELEASE_URL)
+            response = requests.get(RELEASE_URL, timeout=30)  # Set a timeout
             response.raise_for_status()  # Raise an exception for HTTP errors
-            with open(MODEL_PATH, 'wb') as f:
-                f.write(response.content)
-            logging.info(f"Model downloaded successfully and saved to {MODEL_PATH}")
-        except Exception as e:
+            if response.content:
+                with open(MODEL_PATH, 'wb') as f:
+                    f.write(response.content)
+                logging.info(f"Model downloaded successfully and saved to {MODEL_PATH}")
+            else:
+                logging.error("Downloaded content is empty. Please check the URL.")
+                raise RuntimeError("Downloaded content is empty.")
+        except requests.exceptions.RequestException as e:
             logging.error(f"Error downloading the model: {e}")
             raise RuntimeError(f"Error downloading the model: {e}")
 
