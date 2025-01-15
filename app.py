@@ -1,9 +1,10 @@
 import os
-import requests
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from ultralytics import YOLO
 from werkzeug.utils import secure_filename
+from PIL import Image
+import logging
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -11,28 +12,40 @@ app = Flask(__name__)
 # Enable CORS for the Flask app
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-RELEASE_URL = "https://github.com/HebaHamdan2/ChildDrawingsSpeak-backend/releases/download/v.1.0.0/best.pt"  
-MODEL_PATH = "/tmp/best.pt"  
+# Set up logging for debugging
+logging.basicConfig(level=logging.INFO)
 
-def download_model():
-    if not os.path.exists(MODEL_PATH):
-        response = requests.get(RELEASE_URL)
-        if response.status_code == 200:
-            with open(MODEL_PATH, 'wb') as f:
-                f.write(response.content)
+# Load the YOLO model - use an absolute path or environment variable if needed
+MODEL_PATH = os.getenv("MODEL_PATH", "./best.pt")  # Ensure the path is correct for deployment
+if not os.path.exists(MODEL_PATH):
+    logging.warning(f"Model file not found at {MODEL_PATH}. Ensure the path is correct.")
 
-# Download the model if it doesn't exist
-download_model()
-
-# Load the YOLO model
-model = YOLO(MODEL_PATH)
+try:
+    model = YOLO(MODEL_PATH)
+    logging.info("YOLO model loaded successfully.")
+except Exception as e:
+    raise RuntimeError(f"Error loading YOLO model: {e}")
 
 # Define allowed file extensions for uploads
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
+# Ensure the 'uploads' directory exists for temporary file storage
+UPLOADS_DIR = os.path.join(os.getcwd(), "uploads")
+os.makedirs(UPLOADS_DIR, exist_ok=True)
+
 # Function to check allowed file extensions
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+# Function to resize the uploaded image
+def resize_image(filepath, target_size=(224, 224)):
+    try:
+        with Image.open(filepath) as img:
+            img = img.resize(target_size)
+            img.save(filepath)
+            logging.info(f"Image resized to: {target_size}")
+    except Exception as e:
+        raise RuntimeError(f"Error resizing image: {e}")
 
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -47,12 +60,20 @@ def predict():
         return jsonify({'error': 'Invalid file format. Allowed formats: png, jpg, jpeg'}), 400
 
     filename = secure_filename(file.filename)
-    filepath = os.path.join("/tmp", filename)
-
-    # Save the uploaded file to the temporary directory
-    file.save(filepath)
+    filepath = os.path.join(UPLOADS_DIR, filename)
 
     try:
+        # Save the uploaded file to the server
+        file.save(filepath)
+        logging.info(f"Image saved at: {filepath}")
+
+        # Open and log the image properties
+        with Image.open(filepath) as img:
+            logging.info(f"Original image size: {img.size}")
+
+        # Resize the image
+        resize_image(filepath)
+
         # Run inference using the YOLO model
         results = model.predict(source=filepath, show=False)
 
@@ -70,10 +91,13 @@ def predict():
 
     except Exception as e:
         # Log the error and cleanup
+        logging.error(f"Error during prediction: {e}")
         if os.path.exists(filepath):
             os.remove(filepath)
         return jsonify({'error': f"Error during prediction: {str(e)}"}), 500
 
-# Main entry point for Vercel deployment
+# Main entry point for Render deployment
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.getenv("PORT", 5000)))
+    # Ensure the app uses the correct port on the cloud platform
+    port = int(os.getenv("PORT", 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
