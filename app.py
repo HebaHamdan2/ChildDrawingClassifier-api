@@ -16,7 +16,7 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 logging.basicConfig(level=logging.INFO)
 
 # Load the YOLO model - use an absolute path or environment variable if needed
-MODEL_PATH = os.getenv("MODEL_PATH", "./best.pt")  # Ensure the path is correct for deployment
+MODEL_PATH = os.getenv("MODEL_PATH", "./best.pt")  
 if not os.path.exists(MODEL_PATH):
     logging.warning(f"Model file not found at {MODEL_PATH}. Ensure the path is correct.")
 
